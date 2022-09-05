@@ -11,37 +11,37 @@
 
 import SwiftUI
 
-struct PlotView: View {
-    @EnvironmentObject var dataSource: DataSource  // Observe the instance of DataSource passed from ContentView
+struct WaveShape: Shape {
+    let height: Double
+    let width: Double
+    var animatableData: AnimatableVector
     
-    var animatableData: AnimatableVector {
-        get { return dataSource.vector }
-        set { dataSource.vector = newValue }
+    func path(in rect: CGRect) -> Path {
+        var x: Double = 0.0
+        var y: Double = 0.0
+        var path = Path()
+        path.move(to: CGPoint( x: 0.0, y: height - height * Double(animatableData[0]) ) )
+        for i in 1 ..< 16 {
+            x = width * Double(i) / Double(15)
+            y = height - height * Double( animatableData[i] )
+            path.addLine(to: CGPoint(x: x, y: y))
+        }
+        return path
     }
-    
+}
+
+struct PlotView: View {
+    @EnvironmentObject var dataSource: DataSource
     
     var body: some View {
-        Canvas { context, size in
-
-            let width: Double  = size.width
-            let height: Double = size.height
-
-            var x: Double = 0.0         // The drawing origin is in the upper left corner.
-            var y: Double = 0.0         // The drawing origin is in the upper left corner.
-            
-            var path = Path()
-            path.move(to: CGPoint( x: 0.0, y: height - height * Double(animatableData[0]) ) )
-
-            for i in 1 ..< 16 {
-                x = width * Double(i) / Double(15)
-                y = height - height * Double( animatableData[i] )
-                path.addLine(to: CGPoint(x: x, y: y))
-            }
-
-            context.stroke( path,
-                            with: .color( Color(red: 1.0, green: 0.0, blue: 0.0) ),
-                            lineWidth: 2.0 )
+        GeometryReader { proxy in
+            WaveShape(
+                height: proxy.size.height,
+                width: proxy.size.width,
+                animatableData: dataSource.vector
+            )
+            .stroke(Color.red, lineWidth: 5)
+            .animation(.linear(duration: 0.5), value: dataSource.vector)
         }
-        .animation(.easeInOut(duration: 0.2), value: animatableData)
     }
 }
